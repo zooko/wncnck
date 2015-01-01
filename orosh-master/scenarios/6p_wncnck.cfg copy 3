@@ -1,0 +1,677 @@
+# 3p-Orosh v5.4 (updated for Wesnoth 1.10)
+# by Dovolente - March 2011
+# by Zooko - November 2014
+# by Arc de Seel - December 2014
+
+[multiplayer]
+    id=wncnck-6p
+    name= _ "6p - Doubleyuen Seeyen Seekay"
+    random_start_time=yes
+
+#define UNITT TYPE X Y SIDE
+    {VARIABLE_OP rep value 0}
+    {REPEAT 6 (
+        {VARIABLE_OP rep add 1}
+        [if]
+            [have_unit]
+                canrecruit=yes
+                side=$rep
+            [/have_unit]
+            [then]
+                [unit]
+                    side={SIDE}
+                    type={TYPE}
+                    x={X}
+                    y={Y}
+                    random_traits=yes
+                    placement=map_passable
+                [/unit]
+            [/then]
+        [/if])}
+#enddef
+#define UNITT_NONDUPE TYPE X Y SIDE
+    [unit]
+        side={SIDE}
+        type={TYPE}
+        x={X}
+        y={Y}
+        random_traits=yes
+        placement=map_passable
+    [/unit]
+    {REPEAT 6 (
+        {VARIABLE_OP rep add 1}
+        [if]
+            [have_unit]
+                canrecruit=yes
+                side=$rep
+            [/have_unit]
+            [then]
+                [modify_unit]
+                    [filter]
+                        x,y={X},{Y}
+                    [/filter]
+                    {TRAIT_RESILIENT}
+                    {TRAIT_INTELLIGENT}
+                    {TRAIT_DEXTROUS}
+                    {TRAIT_STRONG}
+                    {TRAIT_QUICK}
+                [/modify_unit]
+            [/then]
+        [/if])}
+#enddef
+#define GAURD TYPE X Y SIDE
+    {VARIABLE_OP rep value 0}
+    [unit]
+        side={SIDE}
+        type={TYPE}
+        x={X}
+        y={Y}
+        random_traits=no
+        placement=map_passable
+    [/unit]
+    {REPEAT 6 (
+        {VARIABLE_OP rep add 1}
+        [if]
+            [have_unit]
+                canrecruit=yes
+                side=$rep
+            [/have_unit]
+            [then]
+                [modify_unit]
+                    [filter]
+                        x,y={X},{Y}
+                    [/filter]
+                    {TRAIT_RESILIENT}
+                    {TRAIT_INTELLIGENT}
+                    {TRAIT_DEXTROUS}
+                    {TRAIT_STRONG}
+                    max_moves=1
+                    [movement_costs]
+                        shallow_water=2
+                        reef=2
+                        swamp_water=2
+                        flat=2
+                        sand=2
+                        forest=2
+                        hills=2
+                        mountains=2
+                        village=2
+                        castle=2
+                        cave=2
+                        frozen=2
+                        fungus=2
+                        village=2
+                    [/movement_costs]
+                [/modify_unit]
+            [/then]
+        [/if])}
+#enddef
+
+#define UPGRADEIFON SIDE
+    [event]
+        name=side {SIDE} turn
+        allow_undo=yes
+        first_time_only=no
+	[message]
+	    message="It is side turn " $turn_number "."
+	[/message]
+        [if]
+            [have_unit]
+                canrecruit=yes
+                x,y=$currdest[{SIDE}].x,$currdest[{SIDE}].y
+                side={SIDE}
+            [/have_unit]
+            [then]
+	        [message]
+	            message="We have a unit on its goal!"
+	        [/message]
+                [modify_unit]
+                    [filter]
+                        side={SIDE}
+                    [/filter]
+                    {TRAIT_RESILIENT}
+                    {TRAIT_INTELLIGENT}
+                    {TRAIT_DEXTROUS}
+                    {TRAIT_STRONG}
+                    {TRAIT_QUICK}
+                [/modify_unit]
+	        [message]
+	            message="It has been modified."
+	        [/message]
+                {CHOOSEKEEP {SIDE}}
+	        [message]
+	            message="It has been chosen to go for the keep at " $destkeep[$currdestnum[{SIDE}].num].x " and " $destkeep[$currdestnum[{SIDE}].num].y "."
+	        [/message]
+                [set_variable]
+                    name=currdest[{SIDE}].x
+                    value=$destkeep[$currdestnum[{SIDE}].num].x
+                [/set_variable]
+                [set_variable]
+                    name=currdest[{SIDE}].y
+                    value=$destkeep[$currdestnum[{SIDE}].num].y
+                [/set_variable]
+                [objectives]
+                    side={SIDE}
+                    [objective]
+                        description=_"Survive till turn 65."
+                        condition=win
+                    [/objective]
+                    [note]
+                        description=_"Find your way to the friendly keep at x: " $currdest[{SIDE}].x " and y: " $currdest[{SIDE}].y " to gain a bonus to all your units."
+                    [/note]
+                    [note]
+                        description=_"Bonus: strong, intelligent, dextrous, quick, and resilient."
+                    [/note]
+                [/objectives]
+            [/then]
+        [/if]
+    [/event]
+#enddef
+
+#define CHOOSEKEEP NUM
+    #[message]
+    #	message=_ "Player " {NUM} " is at keep " $currdestnum[{NUM}].num "..."
+    #[/message]
+    [if]
+        [variable]
+            name=currdestnum[{NUM}].num
+            equals=1
+        [/variable]
+        [or]
+            [variable]
+                name=currdestnum[{NUM}].num
+                equals=4
+            [/variable]
+        [/or]
+        [or]
+            [variable]
+                name=currdestnum[{NUM}].num
+                equals=5
+            [/variable]
+        [/or]
+        [then]
+            #		[message]
+            #			message=_ "...is at keep 1, 4, or 5, and going to 2, 3, or 6..."
+            #		[/message]
+            [set_variable]
+                name=currdestnum[{NUM}].num
+                rand=1,4,5
+            [/set_variable]
+        [/then]
+        [else]
+            #		[message]
+            #			message=_ "...is at keep 2, 3, or 6, and going to 1, 4, or 5..."
+            #		[/message]
+            [set_variable]
+                name=currdestnum[{NUM}].num
+                rand=2,3,6
+            [/set_variable]
+        [/else]
+    [/if]
+    #[message]
+    #	message=_ "...and is going to keep " $currdestnum[{NUM}].num "."
+    #[/message]
+#enddef
+
+#define SIDE NUM
+    [side]
+        id=Human
+        side={NUM}
+        can recruit=yes
+        controller=human
+        team_name=defenders
+        gold=75
+        color_lock=true
+        user_team_name= _ "Defenders"
+        team_lock=yes
+        fog=yes
+        shroud=yes
+    [/side]
+#enddef
+
+    map_data="{~add-ons/orosh-master/maps/6p-wncnck.map}"
+    description= _ "A 6-Player Survival Scenario."
+    turns="-1"
+    victory_when_enemies_defeated=no
+    experience_modifier=65%
+    fog=yes
+    shroud=yes
+    {DEFAULT_SCHEDULE}
+    {DEFAULT_MUSIC_PLAYLIST}
+
+    {SIDE 1}
+    {SIDE 2}
+    {SIDE 3}
+    {SIDE 4}
+    {SIDE 5}
+    {SIDE 6}
+
+    [side]
+        side=7
+        controller=ai
+        canrecruit=no
+        allow_player=no
+        team_name=crusaders
+        gold=0
+        user_team_name= _ "Defilers"
+        team_lock=yes
+        color=black
+        color_lock=true
+        hidden=yes
+        no_leader=yes
+    [/side]
+    [side]
+        side=8
+        controller=ai
+        canrecruit=no
+        allow_player=no
+        team_name=crusaders
+        gold=0
+        user_team_name= _ "Defilers"
+        team_lock=yes
+        color=black
+        color_lock=true
+        hidden=yes
+        no_leader=yes
+    [/side]
+
+    [event]
+        name=prestart
+
+        {MODIFY_AI_ADD_SIMPLE_ASPECT 1 aggression * 0}
+        {MODIFY_AI_ADD_SIMPLE_ASPECT 2 aggression * 0}
+        {MODIFY_AI_ADD_SIMPLE_ASPECT 3 aggression * 0}
+
+        {PLACE_IMAGE "scenery/lighthouse.png" 9 24}
+        {PLACE_IMAGE "scenery/lighthouse.png" 13 21}
+        {PLACE_IMAGE "scenery/lighthouse.png" 18 23}
+        {PLACE_IMAGE "scenery/lighthouse.png" 9 5}
+        {PLACE_IMAGE "scenery/lighthouse.png" 14 7}
+        {PLACE_IMAGE "scenery/lighthouse.png" 18 4}
+
+        [objectives]
+            [objective]
+                description=_"Survive till turn 65."
+                condition=win
+            [/objective]
+        [/objectives]
+
+        #add a hidden leader so players whose leaders die can still play
+        [unit]
+            side=8
+            type="Fire Dragon" #To not reward cheaters
+            canrecruit=yes
+            id="Ignore Me"
+            x=2
+            y=18
+        [/unit]
+        [unit]
+            side=7
+            type="Fire Dragon"
+            canrecruit=yes
+            id="Ignore Me"
+            x=25
+            y=10
+        [/unit]
+        [hide_unit]
+            x,y=2,18
+        [/hide_unit]
+        [hide_unit]
+            x,y=25,10
+        [/hide_unit]
+
+        {GAURD "Elvish Ranger" 6 19 7}
+        {GAURD "Elvish Ranger" 21 9 8}
+        {GAURD "Skeleton Archer" 13 16 7}
+        {GAURD "Skeleton Archer" 14 12 8}
+        {GAURD "Skeleton" 13 14 7}
+        {GAURD "Skeleton" 14 14 8}
+    [/event]
+    [event]
+        name=turn 1
+        {UNITT_NONDUPE "Peasant" 11 1 7}
+        {UNITT_NONDUPE "Peasant" 15 1 8}
+        {UNITT_NONDUPE "Peasant" 12 27 8}
+        {UNITT_NONDUPE "Peasant" 16 27 7}
+    [/event]
+    [event]
+        name=turn 33
+        {UNITT_NONDUPE "Peasant" 11 1 7}
+        {UNITT_NONDUPE "Peasant" 15 1 8}
+        {UNITT_NONDUPE "Peasant" 12 27 8}
+        {UNITT_NONDUPE "Peasant" 16 27 7}
+    [/event]
+    [event]
+        name=turn 49
+        {UNITT_NONDUPE "Peasant" 11 1 7}
+        {UNITT_NONDUPE "Peasant" 15 1 8}
+        {UNITT_NONDUPE "Peasant" 12 27 8}
+        {UNITT_NONDUPE "Peasant" 16 27 7}
+    [/event]
+    [event]
+        name=turn 57
+        {UNITT_NONDUPE "Peasant" 11 1 7}
+        {UNITT_NONDUPE "Peasant" 15 1 8}
+        {UNITT_NONDUPE "Peasant" 12 27 8}
+        {UNITT_NONDUPE "Peasant" 16 27 7}
+    [/event]
+    [event]
+        name=turn 61
+        {UNITT_NONDUPE "Peasant" 11 1 7}
+        {UNITT_NONDUPE "Peasant" 15 1 8}
+        {UNITT_NONDUPE "Peasant" 12 27 8}
+        {UNITT_NONDUPE "Peasant" 16 27 7}
+    [/event]
+    [event]
+        name=turn 63
+        {UNITT_NONDUPE "Peasant" 11 1 7}
+        {UNITT_NONDUPE "Peasant" 15 1 8}
+        {UNITT_NONDUPE "Peasant" 12 27 8}
+        {UNITT_NONDUPE "Peasant" 16 27 7}
+    [/event]
+    [event]
+        name=turn 64
+        {UNITT_NONDUPE "Peasant" 11 1 7}
+        {UNITT_NONDUPE "Peasant" 15 1 8}
+        {UNITT_NONDUPE "Peasant" 12 27 8}
+        {UNITT_NONDUPE "Peasant" 16 27 7}
+    [/event]
+    [event]
+        name=turn 1
+        {UNITT "Wolf Rider" 1 15 8}
+        {UNITT "Wolf Rider" 26 13 7}
+        {UNITT "Goblin Spearman" 1 15 7}
+        {UNITT "Goblin Spearman" 26 13 8}
+        {UNITT_NONDUPE "Peasant" 11 1 7}
+        {UNITT_NONDUPE "Peasant" 15 1 8}
+        {UNITT_NONDUPE "Peasant" 12 27 8}
+        {UNITT_NONDUPE "Peasant" 16 27 7}
+    [/event]
+    [event]
+        name=turn 5
+        {UNITT "Ghost" 1 2 8}
+        {UNITT "Ghost" 26 26 7}
+        {UNITT "Walking Corpse" 1 15 7}
+        {UNITT "Walking Corpse" 26 13 8}
+    [/event]
+    [event]
+        name=turn 8
+        {UNITT "Dwarvish Guardsman" 1 15 7}
+        {UNITT "Dwarvish Guardsman" 26 13 8}
+    [/event]
+    [event]
+        name=turn 10
+        {UNITT "Vampire Bat" 1 2 8}
+        {UNITT "Vampire Bat" 26 26 7}
+        {UNITT "Elvish Scout" 1 15 7}
+        {UNITT "Elvish Scout" 26 13 8}
+    [/event]
+    [event]
+        name=turn 15
+        {UNITT "Drake Clasher" 1 15 7}
+        {UNITT "Drake Clasher" 26 13 8}
+        {UNITT "Mage" 1 15 7}
+        {UNITT "Mage" 26 13 8}
+    [/event]
+    [event]
+        name=turn 16
+        {UNITT "Dread Bat" 1 2 8}
+        {UNITT "Dread Bat" 26 26 7}
+        {UNITT "Orcish Grunt" 1 15 7}
+        {UNITT "Orcish Grunt" 26 13 8}
+    [/event]
+    [event]
+        name=turn 25
+        {UNITT "Nightgaunt" 1 2 8}
+        {UNITT "Nightgaunt" 26 26 7}
+    [/event]
+    [event]
+        name=turn 32
+        {UNITT "Troll" 1 15 7}
+        {UNITT "Troll" 26 13 8}
+    [/event]
+    [event]
+        name=turn 33
+        {UNITT "Elvish Druid" 1 15 7}
+        {UNITT "Elvish Druid" 26 13 8}
+    [/event]
+    [event]
+        name=turn 39
+        {UNITT_NONDUPE "Grand Marshal" 1 15 7}
+        {UNITT_NONDUPE "Grand Marshal" 26 13 8}
+        {UNITT_NONDUPE "Mage of Light" 1 15 7}
+        {UNITT_NONDUPE "Mage of Light" 26 13 8}
+        {UNITT "Peasant" 1 15 7}
+        {UNITT "Peasant" 26 13 8}
+    [/event]
+    [event]
+        name=turn 43
+        {UNITT "Naga Mermidon" 1 15 7}
+        {UNITT "Naga Mermidon" 26 13 8}
+    [/event]
+    [event]
+        name=turn 44
+        {UNITT "Cavalryman" 1 15 7}
+        {UNITT "Cavalryman" 26 13 8}
+    [/event]
+    [event]
+        name=turn 48
+        {UNITT "Dwarvish Berserker" 1 15 7}
+        {UNITT "Dwarvish Berserker" 26 13 8}
+        {UNITT "Lancer" 1 15 7}
+        {UNITT "Lancer" 26 13 8}
+    [/event]
+    [event]
+        name=turn 53
+        {UNITT "Highwayman" 1 15 8}
+        {UNITT "Highwayman" 26 13 7}
+        {UNITT "Footpad" 1 15 8}
+        {UNITT "Footpad" 26 13 7}
+        {UNITT "Poacher" 1 15 8}
+        {UNITT "Poacher" 26 13 7}
+        {UNITT "Thief" 1 15 8}
+        {UNITT "Thief" 26 13 7}
+    [/event]
+    [event]
+        name=turn 59
+        {UNITT "Spectre" 1 2 8}
+        {UNITT "Spectre" 26 26 7}
+        {UNITT "Ancient Lich" 1 15 8}
+        {UNITT "Ancient Lich" 26 13 7}
+        {UNITT "Ghoul" 1 15 8}
+        {UNITT "Ghoul" 26 13 7}
+    [/event]
+    [event]
+        name=turn 65
+        [endlevel]
+            result=victory
+        [/endlevel]
+    [/event]
+
+    [event]
+        name=start
+    [/event]
+
+    [event]
+        name=victory
+        {FLASH_WHITE (
+            [kill]
+                side=7
+                animate=yes
+            [/kill]
+            [kill]
+                side=8
+                animate=yes
+            [/kill])}
+        [/event]
+
+        {RENEWABLE_LEADERS 1}
+        {RENEWABLE_LEADERS 2}
+        {RENEWABLE_LEADERS 3}
+        {RENEWABLE_LEADERS 4}
+        {RENEWABLE_LEADERS 5}
+        {RENEWABLE_LEADERS 6}
+
+        [event]
+            name=prestart
+            first_time_only=no
+            [set_variables]
+                name=destkeep
+                [value]
+                    x=0
+                    y=0
+                [/value]
+                [value]
+                    x=14
+                    y=7
+                [/value]
+                [value]
+                    x=9
+                    y=24
+                [/value]
+                [value]
+                    x=18
+                    y=23
+                [/value]
+                [value]
+                    x=18
+                    y=4
+                [/value]
+                [value]
+                    x=9
+                    y=5
+                [/value]
+                [value]
+                    x=13
+                    y=21
+                [/value]
+            [/set_variables]
+            {VARIABLE_OP it value 0}
+            {REPEAT 6 (
+                {VARIABLE_OP it add 1}
+                [set_variable]
+                    name=currdestnum[$it].num
+                    value=$it
+                [/set_variable])}{CHOOSEKEEP 1}
+                {CHOOSEKEEP 2}
+                {CHOOSEKEEP 3}
+                {CHOOSEKEEP 4}
+                {CHOOSEKEEP 5}
+                {CHOOSEKEEP 6}
+                [set_variables]
+                    name=currdest
+                    [value]
+                        x=0
+                        y=0
+                    [/value]
+                    [value]
+                        x=$destkeep[$currdestnum[1].num].x
+                        y=$destkeep[$currdestnum[1].num].y
+                    [/value]
+                    [value]
+                        x=$destkeep[$currdestnum[2].num].x
+                        y=$destkeep[$currdestnum[2].num].y
+                    [/value]
+                    [value]
+                        x=$destkeep[$currdestnum[3].num].x
+                        y=$destkeep[$currdestnum[3].num].y
+                    [/value]
+                    [value]
+                        x=$destkeep[$currdestnum[4].num].x
+                        y=$destkeep[$currdestnum[4].num].y
+                    [/value]
+                    [value]
+                        x=$destkeep[$currdestnum[5].num].x
+                        y=$destkeep[$currdestnum[5].num].y
+                    [/value]
+                    [value]
+                        x=$destkeep[$currdestnum[6].num].x
+                        y=$destkeep[$currdestnum[6].num].y
+                    [/value]
+                [/set_variables]
+                [objectives]
+                    side=1
+                    [objective]
+                        description=_"Survive till turn 65."
+                        condition=win
+                    [/objective]
+                    [note]
+                        description=_"Find your way to the friendly keep at x: " $currdest[1].x " and y: " $currdest[1].y " to gain a bonus to all your units."
+                    [/note]
+                    [note]
+                        description=_"Bonus: strong, intelligent, dextrous, quick, and resilient."
+                    [/note]
+                [/objectives]
+                [objectives]
+                    side=2
+                    [objective]
+                        description=_"Survive till turn 65."
+                        condition=win
+                    [/objective]
+                    [note]
+                        description=_"Find your way to the friendly keep at x: " $currdest[2].x " and y: " $currdest[2].y " to gain a bonus to all your units."
+                    [/note]
+                    [note]
+                        description=_"Bonus: strong, intelligent, dextrous, quick, and resilient."
+                    [/note]
+                [/objectives]
+                [objectives]
+                    side=3
+                    [objective]
+                        description=_"Survive till turn 65."
+                        condition=win
+                    [/objective]
+                    [note]
+                        description=_"Find your way to the friendly keep at x: " $currdest[3].x " and y: " $currdest[3].y " to gain a bonus to all your units."
+                    [/note]
+                    [note]
+                        description=_"Bonus: strong, intelligent, dextrous, quick, and resilient."
+                    [/note]
+                [/objectives]
+                [objectives]
+                    side=4
+                    [objective]
+                        description=_"Survive till turn 65."
+                        condition=win
+                    [/objective]
+                    [note]
+                        description=_"Find your way to the friendly keep at x: " $currdest[4].x " and y: " $currdest[4].y " to gain a bonus to all your units."
+                    [/note]
+                    [note]
+                        description=_"Bonus: strong, intelligent, dextrous, quick, and resilient."
+                    [/note]
+                [/objectives]
+                [objectives]
+                    side=5
+                    [objective]
+                        description=_"Survive till turn 65."
+                        condition=win
+                    [/objective]
+                    [note]
+                        description=_"Find your way to the friendly keep at x: " $currdest[5].x " and y: " $currdest[5].y " to gain a bonus to all your units."
+                    [/note]
+                    [note]
+                        description=_"Bonus: strong, intelligent, dextrous, quick, and resilient."
+                    [/note]
+                [/objectives]
+                [objectives]
+                    side=6
+                    [objective]
+                        description=_"Survive till turn 65."
+                        condition=win
+                    [/objective]
+                    [note]
+                        description=_"Find your way to the friendly keep at x: " $currdest[6].x " and y: " $currdest[6].y " to gain a bonus to all your units."
+                    [/note]
+                    [note]
+                        description=_"Bonus: strong, intelligent, dextrous, quick, and resilient."
+                    [/note]
+                [/objectives]
+            [/event]
+            {UPGRADEIFON 1}
+            {UPGRADEIFON 2}
+            {UPGRADEIFON 3}
+            {UPGRADEIFON 4}
+            {UPGRADEIFON 5}
+            {UPGRADEIFON 6}
+        [/multiplayer]
